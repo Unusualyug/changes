@@ -323,6 +323,7 @@ export const appRouter = router({
                     `report-${report.id}-${topFinding.name}-overlay`
                   ),
                 ]);
+                
                 completed = await updateReportResult(report.id, {
                   status: "completed",
                   processedImageUrl: processed.secureUrl,

@@ -236,14 +236,14 @@ export function ReportDocument({
           </div>
           {!publicMode && (
             <div className="flex flex-wrap gap-2 print:hidden">
-              <Button
+              {/* <Button
                 variant="outline"
                 className="rounded-full"
                 onClick={downloadPdf}
               >
                 <Download className="mr-2 h-4 w-4" />
                 Download PDF
-              </Button>
+              </Button> */}
               <Button
                 variant="outline"
                 className="rounded-full"
