@@ -1,28 +1,34 @@
-MediVision AI — Final Revised IEEE Research Paper
-=================================================
+MediVision AI - Final Revised IEEE Research Paper (v2: corrected)
+=====================================================================
 
-This message accompanies: "Final Revised IEEE Research Paper - MediVision AI"
+Attachment 2 of 2: MediVision_AI_IEEE_Research_Final.docx  (15 pp., editable)
+Attachment 1 of 2 was the PDF of the same manuscript, sent in the previous message.
 
-Attachments are delivered in two emails because the mail interface accepts one
-staged file per message:
+This version supersedes the two messages sent earlier today. The two differences
+from those earlier emails:
 
-  1/2  MediVision_AI_IEEE_Research_Final.pdf    (14 pp., IEEE two-column)
-  2/2  MediVision_AI_IEEE_Research_Final.docx   (editable manuscript)
+1. Cardiomegaly ROC-AUC resolved. The archived ROC curve (0.957) is excluded and
+   the value 0.805 is retained, because the verified count matrix fixes the
+   operating point at (FPR 0.137, TPR 0.479), for which the attainable AUC bracket
+   is 0.536-0.707. The recorded 0.805 lies inside that bracket; 0.957 lies outside
+   it. Three of the four archived curves reproduce their AUCs to 0.002 and pass
+   through their own operating points to 0.004; the Cardiomegaly curve misses its
+   operating point by 0.480. Details in Section IV-E and Appendix B.
 
-Also in the repository under paper/:
-  VERIFICATION_REPORT.md   what was checked, and what could not be done
-  WORKFLOW.md              rebuilds both documents in one command
-  figures/fig_roc.png, fig_confusion.png, fig_loss.png, fig_gradcam.png
-                           (600 dpi; fig_pipeline.png is also included)
+2. A correction. The validation-loss figures quoted in the earlier version
+   (0.1595 -> 0.1485 over 8 epochs) do not exist in the repository; no loss series
+   is persisted and no checkpoint is released. Every loss value has been removed,
+   and fig_loss.png is now an explicit "no data" panel.
 
-Headline results (held-out test set, n = 830 studies, threshold 0.50):
-  Macro ROC-AUC 0.771 | Normal 0.724 | Pneumonia 0.709 |
-  Cardiomegaly 0.805 (recorded; archived curve excluded, see below) |
-  Pleural effusion 0.844
+Unchanged and traceable to evaluation.json (n = 830, threshold 0.50):
+  Macro ROC-AUC 0.771
+  Normal 0.724 | Pneumonia 0.709 | Cardiomegaly 0.805 (recorded) | Pleural effusion 0.844
+  Macro sensitivity 0.638 | specificity 0.705 | precision 0.323 | F1 0.349
+  Micro F1 0.407
 
-  Cardiomegaly provenance: the archived ROC curve integrates to 0.957 but the
-  verified count matrix fixes its operating point at (FPR 0.137, TPR 0.479), for
-  which the attainable AUC bracket is 0.536-0.707. 0.957 is therefore excluded and
-  the internally consistent record value 0.805 is retained. See Appendix B.
-  Macro sensitivity 0.638 | specificity 0.705 | precision 0.323 |
-  F1 0.349 | micro F1 0.407
+Full package in the repository, branch arena/764341a0-changes, under paper/:
+  MediVision_AI_IEEE_Research_Final.pdf / .docx
+  VERIFICATION_REPORT.md    revision 2 - audit, resolution, and the correction
+  WORKFLOW.md               rebuilds both documents in one command
+  figures/                  fig_roc.png, fig_confusion.png, fig_loss.png,
+                            fig_gradcam.png, fig_pipeline.png (600 dpi)
