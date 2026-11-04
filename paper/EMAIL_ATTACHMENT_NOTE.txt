@@ -1,0 +1,22 @@
+MediVision AI — Final Revised IEEE Research Paper
+=================================================
+
+This message accompanies: "Final Revised IEEE Research Paper - MediVision AI"
+
+Attachments are delivered in two emails because the mail interface accepts one
+staged file per message:
+
+  1/2  MediVision_AI_IEEE_Research_Final.pdf    (14 pp., IEEE two-column)
+  2/2  MediVision_AI_IEEE_Research_Final.docx   (editable manuscript)
+
+Also in the repository under paper/:
+  VERIFICATION_REPORT.md   what was checked, and what could not be done
+  WORKFLOW.md              rebuilds both documents in one command
+  figures/fig_roc.png, fig_confusion.png, fig_loss.png, fig_gradcam.png
+                           (600 dpi; fig_pipeline.png is also included)
+
+Headline results (held-out test set, n = 830 studies, threshold 0.50):
+  Macro ROC-AUC 0.771 | Normal 0.724 | Pneumonia 0.709 |
+  Cardiomegaly 0.805 | Pleural effusion 0.844
+  Macro sensitivity 0.638 | specificity 0.705 | precision 0.323 |
+  F1 0.349 | micro F1 0.407
