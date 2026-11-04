@@ -27,7 +27,11 @@ ABSTRACT = (
  "(AUC) of 0.771, with per-finding AUCs of 0.724 (Normal), 0.709 (Pneumonia), 0.805 "
  "(Cardiomegaly) and 0.844 (Pleural effusion); macro sensitivity, specificity, "
  "precision and F1 at a 0.50 threshold were 0.638, 0.705, 0.323 and 0.349, "
- "respectively, and micro-averaged F1 was 0.407. Because the pipeline emits only "
+ "respectively, and micro-averaged F1 was 0.407. Those values are the record of a "
+ "single evaluation run and were checked against one another: three of the four "
+ "archived ROC curves reproduce their reported AUCs to within 0.002, whereas the "
+ "Cardiomegaly curve does not reproduce its own confusion counts and is excluded "
+ "from the figure.  Because the pipeline emits only "
  "aggregate metrics, 95% bootstrap confidence intervals and a paired bootstrap "
  "ablation are specified but not computed here, and the paper abstains from "
  "inferential claims that these intervals would require. In addition to the "
@@ -87,7 +91,9 @@ BODY = [
  "830-study test partition that is disjoint from training and validation at the "
  "patient level, at a single operating point of 0.50, with per-finding confusion "
  "counts that reproduce the reported sensitivities and specificities exactly "
- "(Tables III and IV).",
+ "(Tables III and IV). We also report a provenance audit of the committed "
+ "evaluation artifacts, which identifies one figure that cannot belong to the "
+ "run whose metrics are recorded.",
  "<b>An audit of statistical claims.</b> The paper states precisely which inferential "
  "quantities the current artifacts can support. Because the evaluation pipeline "
  "writes aggregate metrics only, patient-level bootstrap intervals and a paired "
@@ -393,27 +399,35 @@ BODY = [
  "variability is dominated by that term."),
 ("h2", "B. Training Behaviour"),
 ("p",
- "Validation loss decreased from 0.1595 at epoch 1 to 0.1485 at epoch 8, with a "
- "single non-monotone step at epoch 6 (0.1489) that was too small to trigger the "
- "plateau schedule. The best checkpoint coincides with the last completed epoch, so "
- "the model reported here is the least-regularised of the eight, and the absence of a "
- "later upturn means that over-fitting was not observed on the validation partition "
- "within the budget. This is a statement about the validation loss of the weighted "
- "objective, which is dominated by the Normal finding because of its prevalence, and "
- "not a statement that the other three decision boundaries were still improving; a "
- "per-finding validation curve is not retained by the pipeline and is listed as a "
- "reporting gap in Section VII."),
+ "The released artifacts record the number of completed epochs (eight) and the "
+ "evaluated metrics, but they record neither the training nor the validation loss "
+ "series: the training loop appends the per-epoch losses to an in-memory history "
+ "object and only the checkpoint written at the end of each epoch would carry it, "
+ "and no such checkpoint is part of the release. No loss value is therefore quoted "
+ "anywhere in this paper, and Fig.&nbsp;{fig:loss} is an explicit no-data panel "
+ "rather than a curve. What can be stated from the record is that eight of the "
+ "twenty budgeted epochs were completed and that the early-stopping criterion "
+ "(patience five) was never triggered, because the run stopped short of its budget "
+ "without a recorded plateau. A per-finding validation curve is likewise absent and "
+ "is listed as a reporting gap in Section VII."),
 ("fig", "loss"),
 ("h2", "C. Held-Out Discrimination"),
 ("p",
  "{tab:T3} reports per-finding performance on the 830 held-out studies at the fixed "
  "threshold of 0.50, and {fig:roc} shows the corresponding ROC curves. Discrimination "
- "is moderate and heterogeneous. Pleural effusion and Cardiomegaly are ranked most "
- "reliably (AUC 0.844 and 0.805), Normal is intermediate (0.724) and Pneumonia is "
- "lowest (0.709) on a denominator of six positive studies. The macro AUC of 0.771 "
- "should be read as a summary of a heterogeneous set of tasks rather than as a single "
- "performance level, and it is not directly comparable to macro AUCs reported on "
- "radiologist-annotated test sets [4] or on the full fourteen-finding benchmark [1]."),
+ "is moderate and heterogeneous, and one of the four entries carries a provenance "
+ "qualification that the reader must see before using any of them. Pleural effusion "
+ "is both the best-ranked and the best-corroborated finding (AUC 0.844, whose "
+ "archived curve reproduces its AUC to 0.001). Cardiomegaly is recorded at 0.805, "
+ "but its archived ROC curve integrates to 0.957 and, at the operating point implied "
+ "by its confusion counts, sits 0.48 above the attainable value; Section IV-E shows "
+ "that the two records cannot come from the same predictions. Normal is intermediate "
+ "(0.724) and Pneumonia is lowest (0.709) on a denominator of six positive studies. "
+ "The macro AUC of 0.771 is the arithmetic mean of these four archived values and "
+ "therefore inherits the Cardiomegaly qualification; it should be read as a summary "
+ "of a heterogeneous set of tasks, not as a single performance level, and it is not "
+ "directly comparable to macro AUCs reported on radiologist-annotated test sets [4] "
+ "or on the full fourteen-finding benchmark [1]."),
 ("table", "T3"),
 ("fig", "roc"),
 ("h2", "D. Operating-Point Behaviour"),
@@ -421,11 +435,14 @@ BODY = [
  "{tab:T4} and {fig:confusion} decompose the same results into confusion counts. The macro "
  "sensitivity of 0.638 against a macro specificity of 0.705 describes a model that is "
  "conservative on Cardiomegaly (sensitivity 0.479 at specificity 0.863) and permissive "
- "on Pleural effusion (sensitivity 0.876 at specificity 0.646). The two behaviours are "
- "consistent with the weighting scheme of Equation (3): effusion has the largest "
- "positive weight in the training partition and Cardiomegaly among the smallest, so "
- "the fixed threshold of 0.50 sits at very different positions on their respective "
- "operating curves. Precision is low for every finding except Normal, which is a "
+ "on Pleural effusion (sensitivity 0.876 at specificity 0.646). These operating "
+ "points are the best-corroborated quantities in the study, since they follow "
+ "arithmetically from count matrices that each account for all 830 held-out studies, "
+ "and they are the quantities on which the provenance discussion of Section IV-E is "
+ "built. The two behaviours are consistent with the weighting scheme of Equation (3): "
+ "effusion has the largest positive weight in the training partition and Cardiomegaly "
+ "among the smallest, so the fixed threshold of 0.50 sits at very different positions "
+ "on their respective operating curves. Precision is low for every finding except Normal, which is a "
  "direct consequence of low prevalence and is the reason precision and recall must be "
  "read together at a stated prevalence."),
 ("table", "T4"),
@@ -442,7 +459,57 @@ BODY = [
  "sensitivity by 0.167, so neither the AUC of 0.709 nor the sensitivity of 0.667 can "
  "be treated as an estimate of anything stable. Reporting that value without this "
  "caveat would be misleading, and the paper therefore flags it as descriptive only."),
-("h2", "E. Statistical Analysis: Plan, Status and Consequences"),
+("h2", "E. Provenance of the Archived ROC Figure"),
+("p",
+ "The release contains two graphical records of the same evaluation: a ROC figure "
+ "and a set of confusion matrices, alongside the JSON metric record. Three of the "
+ "four ROC curves are corroborated by the count matrices. At the operating point "
+ "implied by each verified count matrix, the archived curve passes through it almost "
+ "exactly: the maximum discrepancy is 0.004 (Normal +0.002, Pneumonia +0.001, "
+ "Pleural effusion +0.004), and the areas under the recovered curves agree with the "
+ "recorded AUCs to within 0.002. Cardiomegaly is the exception, and not by a small "
+ "margin. Its count matrix fixes the operating point at a false positive rate of "
+ "0.137 and a true positive rate of 0.479, whereas the archived curve stands at a "
+ "true positive rate of 0.959 for that same false positive rate, a discrepancy of "
+ "0.480, and integrates to 0.957 rather than the recorded 0.805."),
+("p",
+ "This discrepancy is diagnostic rather than cosmetic, because the two records cannot "
+ "both describe the same set of predictions. A curve with an area of 0.957 cannot pass "
+ "through (0.137,&nbsp;0.479): any curve whose true positive rate is 0.479 at a false "
+ "positive rate of 0.137 has, at that point alone, already forfeited at least "
+ "0.5&middot;0.137&middot;(1&minus;0.479)&nbsp;&asymp;&nbsp;0.036 of the unit square, "
+ "and the trapezoidal brackets implied by the operating point are 0.536 and 0.707, "
+ "which enclose 0.805 but exclude 0.957. The archived curve would require the 35 "
+ "true positives that the verified matrix already records to be ranked above almost "
+ "every negative, whereas that same matrix records 104 false positives&mdash;more "
+ "than five times the number of negatives that a curve passing through "
+ "(0.137,&nbsp;0.479) can have above the threshold. The two artifacts therefore "
+ "differ in provenance, not in arithmetic."),
+("p",
+ "Which record should the paper report? The json metric record is the only artifact "
+ "that is internally complete and self-consistent: every sensitivity, specificity, "
+ "precision, F1 and accuracy in it is reproduced exactly from the count matrices it "
+ "also stores (Section III-G, {tab:T4}), the count matrices each total 830 studies, "
+ "and the confusion figure agrees with those matrices in the rank order of its cell "
+ "shadings for every finding. The ROC figure, by contrast, contains no numeric "
+ "coordinates at all&mdash;the pipeline writes only a rendered image&mdash;so it "
+ "cannot be interrogated, only measured, and for Cardiomegaly what it measures "
+ "contradicts every other record. The paper therefore retains 0.805 as the reported "
+ "Cardiomegaly AUC because it is the value the verified, self-consistent record "
+ "contains, and it withdraws the archived curve from the figure. It does not "
+ "substitute 0.957, which is the higher number, because 0.957 is the value that the "
+ "evidence excludes. It equally does not claim that 0.805 has been independently "
+ "re-derived: the value is consistent with the count matrix but its curve was never "
+ "stored, so a re-derivation requires re-running evaluation, as Section VII "
+ "specifies."),
+("p",
+ "The root cause is a pipeline design choice whose cost is now measured: the "
+ "evaluation entry point plots curves from in-memory arrays and persists only the "
+ "image. Any later regeneration, any replotting and any audit of a single curve "
+ "therefore depends on digitising a PNG. The remedy is two lines of code&mdash;write "
+ "the false- and true-positive-rate arrays to the JSON record&mdash;and it is "
+ "recommendation (iv) of Section VII."),
+("h2", "F. Statistical Analysis: Plan, Status and Consequences"),
 ("p",
  "The protocol calls for 95% confidence intervals obtained by resampling the held-out "
  "studies at the patient level with 2,000 replicates, and for a paired bootstrap "
@@ -472,10 +539,10 @@ BODY = [
 ("p",
  "The results establish that a DenseNet121 plus metadata late-fusion model, trained "
  "for eight epochs under a class-weighted objective on a 3,447-image training "
- "partition, ranks held-out studies for Pleural effusion and Cardiomegaly "
- "substantially better than chance, and ranks them for Pneumonia at a level that "
- "cannot be distinguished from a coarse estimate. They do not establish clinical "
- "utility. Utility requires, at minimum, a discrimination level measured against a "
+ "partition, ranks held-out studies for Pleural effusion and, on the strength of its "
+ "count matrix rather than of an archived curve, Cardiomegaly better than chance, and "
+ "ranks them for Pneumonia at a level that cannot be distinguished from a coarse "
+ "estimate. They do not establish clinical utility. Utility requires, at minimum, a discrimination level measured against a "
  "radiologist-annotated reference, a calibration curve, a decision-threshold analysis "
  "with explicit costs, and evidence of transportability to a second institution. None "
  "of these are present, and the corresponding limitations are enumerated in "
@@ -600,6 +667,13 @@ BODY = [
  "<b>No shortcut-control experiments.</b> The metadata-only control, the "
  "view-position permutation audit and the adversarial-invariance variant described in "
  "Section V-C were not run.",
+ "<b>One archived figure is not reproducible.</b> The committed Cardiomegaly ROC "
+ "curve cannot belong to the run whose metrics and counts are recorded (Section "
+ "IV-E, Appendix B). The reported value is therefore the one in the closed record, "
+ "and it is reported as recorded rather than as independently re-derived.",
+ "<b>No loss history.</b> Neither the training nor the validation loss series "
+ "survives in the release, so no statement about convergence, over-fitting or "
+ "checkpoint selection can be supported by data.",
  "<b>Explainability is unvalidated.</b> Grad-CAM is provided as a qualitative aid "
  "only; no localisation ground truth and no saliency sanity check are used [11].",
  "<b>Single training run.</b> One seed, eight completed epochs. No seed replication, "
@@ -615,9 +689,11 @@ BODY = [
  "The framework is organised so that every reported number can be regenerated from "
  "three inputs: the metadata table, the image directory and the saved checkpoint. "
  "Training writes an interrupt-safe checkpoint that stores the model, optimiser and "
- "scheduler state together with the epoch index and the loss history; evaluation "
- "reloads that checkpoint, rebuilds the deterministic partition from the same seed "
- "and writes a structured metrics record. Repository policy excludes image data, "
+ "scheduler state together with the epoch index and the loss history, so a loss curve "
+ "is recoverable from any checkpoint of a run; evaluation reloads that checkpoint, "
+ "rebuilds the deterministic partition from the same seed and writes a structured "
+ "metrics record. No checkpoint is part of the present release, which is why no loss "
+ "curve can be shown here even though the code would support one. Repository policy excludes image data, "
  "checkpoints and generated outputs from version control, which means that a reader "
  "can inspect the code and the metric record but cannot re-execute the evaluation "
  "without supplying the corpus and the weights."),
@@ -634,28 +710,38 @@ BODY = [
  "emit per-finding curve coordinates (false- and true-positive rates) so that "
  "reported ROC curves can be checked against reported AUCs without digitisation. In "
  "the present artifacts the first and fourth are exactly the gaps that prevented "
- "independent verification of the Cardiomegaly curve, discussed in Appendix B."),
+ "independent verification of the Cardiomegaly curve, discussed in Appendix B. To "
+ "these we add a fifth, specific to the inconsistency documented in Section IV-E: "
+ "evaluation must be re-run from the saved checkpoint so that the ROC figure, "
+ "Table III and Table IV are provably produced by one pass, and the run should be "
+ "accepted only if the four quantities in Appendix B agree."),
 
 ("h1", "VIII. CONCLUSION"),
 ("p",
  "This paper reported MediVision AI, a multimodal DenseNet121 framework for "
  "multi-label chest radiograph classification, together with an explicit audit of "
  "what its artifacts do and do not support. On a patient-disjoint 830-study held-out "
- "partition the framework reached a macro AUC of 0.771, with the strongest "
- "discrimination for Pleural effusion (0.844) and Cardiomegaly (0.805) and the weakest, "
- "and least stable, for Pneumonia (0.709 on six positive studies). At a fixed "
- "threshold of 0.50 the model operated at macro sensitivity 0.638 and macro "
- "specificity 0.705."),
+ "partition the framework reached a macro AUC of 0.771, with the strongest and "
+ "best-corroborated discrimination for Pleural effusion (0.844) and the weakest, and "
+ "least stable, for Pneumonia (0.709 on six positive studies). Cardiomegaly is "
+ "recorded at 0.805, and that value is retained because it belongs to the internally "
+ "consistent metric and count record, while the archived Cardiomegaly ROC curve is "
+ "excluded because it cannot derive from the same predictions; the recorded value is "
+ "reported as recorded, not as independently re-derived. At a fixed threshold of 0.50 "
+ "the model operated at macro sensitivity 0.638 and macro specificity 0.705."),
 ("p",
  "Those numbers are offered as a reproducible baseline, not as evidence of clinical "
  "readiness. The audit produced three findings that are more useful than the "
  "aggregate score. First, the class-weighted objective used in training cannot improve "
  "ranking metrics and should not be credited with improved discrimination; it shifts "
  "the operating point instead, which is visible in the per-finding sensitivity and "
- "specificity pairs. Second, the metadata channel is a plausible shortcut carrier "
+ "specificity pairs. Second, one of the four archived ROC curves is not reproducible "
+ "from the verified predictions, which is a reminder that a rendered figure is not "
+ "evidence unless the numbers behind it are stored: three of the four curves pass "
+ "through their own operating points to within 0.004, the fourth misses by 0.48. Second, the metadata channel is a plausible shortcut carrier "
  "because view position covaries with illness severity and acquisition setting, so "
  "the multimodal design requires a metadata-only control and a counterfactual "
- "permutation audit before any fusion benefit can be claimed. Third, the statistics "
+ "permutation audit before any fusion benefit can be claimed. Fourth, the statistics "
  "promised by the original protocol&mdash;bootstrap intervals and a paired ablation "
  "&mdash;are not recoverable from the artifacts as released, and this version states "
  "that plainly rather than reporting estimates it cannot support."),
@@ -728,10 +814,14 @@ TABLES = {
     "<b>0.323</b>", "<b>0.349</b>", "<b>0.669</b>"],
    ["Micro (pooled)", "643", "&mdash;", "0.586", "0.689", "0.311", "0.407", "&mdash;"],
  ],
- note="Precision for Pneumonia is 0.010 because only one of the roughly 400 positive "
-      "predictions is correct; the value is reported for completeness and is not an "
-      "usable operating characteristic. No confidence interval is reported for any "
-      "cell ({tab:T5}).",
+ note="All values are the record of the archived evaluation run. The Cardiomegaly AUC "
+      "of 0.805 is retained because it belongs to the self-consistent metric and count "
+      "record, but its ROC curve was not archived and could not be re-derived; the "
+      "curve that was archived for this finding contradicts the counts and is excluded "
+      "(Section IV-E). Precision for Pneumonia is 0.010 because only one of the roughly "
+      "400 positive predictions is correct; the value is reported for completeness and "
+      "is not a usable operating characteristic. No confidence interval is reported for "
+      "any cell ({tab:T5}).",
 ),
 "T4": dict(
  caption="Confusion counts at threshold 0.50. Each matrix accounts for all 830 "

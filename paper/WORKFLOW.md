@@ -6,9 +6,9 @@ Everything in this folder is generated from `work/` in one pass; nothing is hand
 |---|---|
 | `MediVision_AI_IEEE_Research_Final.pdf` | IEEE two-column paper (14 pp.) |
 | `MediVision_AI_IEEE_Research_Final.docx` | Same manuscript, editable Word file |
-| `figures/fig_roc.png` | ROC curves, held-out test set (n = 830) |
+| `figures/fig_roc.png` | (a) three verified ROC curves; (b) Cardiomegaly AUC bracket derived from verified counts |
 | `figures/fig_confusion.png` | 2x2 confusion matrix per finding |
-| `figures/fig_loss.png` | Validation-loss curve (training curve schematic, labelled) |
+| `figures/fig_loss.png` | Explicit "no data" panel — no loss series exists in the release |
 | `figures/fig_gradcam.png` | Grad-CAM layout placeholder (labelled as such) |
 | `figures/fig_pipeline.png` | System/pipeline diagram |
 
@@ -20,6 +20,8 @@ python3 -m pip install reportlab python-docx matplotlib numpy scikit-learn pillo
 
 python3 extract4.py          # ROC curve coordinates from the committed evaluation PNG
 python3 compute.py           # derived metrics + artifact integrity checks -> results.json
+python3 audit.py             # operating-point + integration tests across the three records
+python3 audit2.py            # confusion-figure agreement and AUC-bracket impossibility test
 python3 make_roc.py          # fig_roc.png
 python3 make_conf.py         # fig_confusion.png
 python3 make_loss.py         # fig_loss.png

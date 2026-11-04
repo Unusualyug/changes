@@ -10,21 +10,26 @@ FIGURES = {
           "qualitative explanations. The dashed-content box marks the one stage the "
           "released artifacts cannot support."),
 "roc": dict(file="fig_roc.png",
-  caption="Receiver operating characteristic curves on the held-out test partition "
-          "(n = 830) for the four modelled findings. Numbers in the legend are the "
-          "reported per-finding AUCs. The curves were regenerated from the coordinates "
-          "recovered from the committed evaluation figure; see Appendix B for the "
-          "verification procedure and the one finding whose plotted curve is not "
-          "arithmetically consistent with its reported AUC."),
+  caption="Receiver operating characteristic (ROC) evidence for the held-out test "
+          "partition (n = 830). (a) Curves for three findings, recovered from the "
+          "archived evaluation figure; legend values are the recorded per-finding AUCs, "
+          "which these curves reproduce to within 0.002. (b) Cardiomegaly: the archived "
+          "curve for this finding is omitted because it cannot belong to the "
+          "predictions summarized by the verified count matrix. Instead the verified "
+          "operating point is shown together with the two extreme ROC curves "
+          "compatible with it (AUC 0.536 to 0.707); the recorded AUC of 0.805 lies "
+          "inside this bracket while the archived curve's 0.957 lies outside it. "
+          "Panel (b) is a constraint diagram, not a measured curve."),
 "confusion": dict(file="fig_confusion.png",
   caption="Confusion matrices at a fixed threshold of 0.50, one 2 \u00d7 2 matrix per "
           "finding, with row-normalised percentages. Counts match {tab:T4} exactly. "
           "The Pneumonia matrix should be read with the six-event denominator in mind."),
 "loss": dict(file="fig_loss.png",
-  caption="Validation loss across the eight completed epochs, with the selected "
-          "checkpoint marked. The pipeline does not persist the training-loss series, "
-          "so the training curve shown is schematic and is clearly labelled as such; "
-          "it must be replaced by the recorded series before submission (Section VII)."),
+  caption="Training and validation loss: no data. The released artifacts contain no "
+          "loss series and no checkpoint history, so no curve can be drawn and no "
+          "value is quoted anywhere in this paper. The panel records the absence "
+          "explicitly; it must be replaced by a genuine curve once the training loop "
+          "persists its history (Section VII, recommendation ii)."),
 "gradcam": dict(file="fig_gradcam.png",
   caption="Grad-CAM overlays of the four findings. This panel is a synthetic layout "
           "placeholder: the released artifacts contain no radiographs and no "
@@ -48,11 +53,15 @@ EXTRA_BODY = [
  "Equation (3), but the earlier draft credited it with improved discrimination, which "
  "is impossible for a rank-invariant metric; the claim has been withdrawn and replaced "
  "by the analytical statement in Section III-E. The completed-epoch count (item F2) is "
- "eight rather than the twenty-one configuration files and the original text implied, "
+ "eight rather than the twenty that the configuration file and the original text implied, "
  "so {tab:T2} now reports both and the training-behaviour discussion is restricted to "
  "the epochs that actually ran. The evaluation stage (item F4) retains no per-study "
  "prediction, which is the root cause of every missing statistical quantity in "
- "{tab:T5} and the reason the ablation cannot be reported at all."),
+ "{tab:T5} and the reason the ablation cannot be reported at all. Items F10 to F12 "
+ "record what the artifact audit added: three of the four archived ROC curves agree "
+ "with the count matrices to 0.004 at their operating points, the fourth does not "
+ "(Section IV-E, Appendix B), and no loss series exists to support any statement "
+ "about convergence."),
 
 ("h1", "APPENDIX A: REFERENCE VERIFICATION"),
 ("p",
@@ -73,40 +82,60 @@ EXTRA_BODY = [
  "record was used instead. A resolution check that inspects the returned title, as was "
  "done here, catches this class of error; a status-code check does not."),
 
-("h1", "APPENDIX B: REPRODUCIBILITY NOTES ON THE FIGURES"),
+("h1", "APPENDIX B: PROVENANCE AUDIT OF THE EVALUATION ARTIFACTS"),
 ("p",
- "{fig:roc} had to be reconstructed rather than re-plotted. The evaluation pipeline emits "
- "an image of the ROC curves and the corresponding AUC values but not the underlying "
- "true- and false-positive rates, so the curve coordinates were recovered from the "
- "committed figure by axis-calibrated pixel extraction: the axes were located from the "
- "tick geometry, each curve was separated from the others by its line colour, and for "
- "each pixel column the uppermost plotted pixel was taken as the curve ordinate. "
- "Re-integrating the recovered coordinates reproduced the reported AUC to within 0.002 "
- "for Normal (0.725 vs 0.724), Pneumonia (0.710 vs 0.709) and Pleural effusion (0.845 "
- "vs 0.844)."),
+ "This appendix records how the three graphical and tabular records of the same "
+ "evaluation were tested against one another, so that the choice reported in "
+ "Section IV-E can be checked rather than trusted. Four independent tests were "
+ "applied."),
+("bullets", [
+ "<b>Arithmetic closure of the metric record.</b> For each finding the stored count "
+ "matrix was converted into sensitivity, specificity, precision, F1 and accuracy and "
+ "compared with the stored values. All twenty quantities reproduce to machine "
+ "precision, every count matrix sums to 830, and the stored macro AUC equals the mean "
+ "of the four per-finding AUCs to six decimal places. The metric record is therefore "
+ "internally closed.",
+ "<b>Agreement of the confusion figure with the count matrices.</b> Cell shading in "
+ "the figure was measured as mean luminance per cell. For Normal, Cardiomegaly and "
+ "Pleural effusion the darkest cell is the largest count and the lightest is the "
+ "smallest, as required. Pneumonia's four cells range only from 2 to 427 count units, "
+ "so its shading is compressed, and it merely satisfies the weaker requirement that "
+ "the two large counts are darker than the two small ones. The figure is consistent "
+ "with the count matrices.",
+ "<b>Operating-point test on the ROC figure.</b> Each verified count matrix fixes a "
+ "single operating point on its ROC curve. The archived curve was digitised on its "
+ "own axis grid and evaluated at that false positive rate. The observed deviations "
+ "between curve and count matrix are +0.002 (Normal), +0.001 (Pneumonia) and +0.004 "
+ "(Pleural effusion), and +0.480 (Cardiomegaly). Three curves pass through their own "
+ "operating points; one does not pass near it.",
+ "<b>Integration test.</b> Re-integrating the digitised curves returns 0.725, 0.710, "
+ "0.845 and 0.957 against recorded AUCs of 0.724, 0.709, 0.844 and 0.805. The three "
+ "that pass the operating-point test also reproduce their AUCs; the one that fails "
+ "the operating-point test is also the one that misses its AUC by 0.151.",
+]),
 ("p",
- "The Cardiomegaly curve did not reproduce: the recovered integral was 0.957 against a "
- "reported 0.805. A difference of this size cannot arise from extraction error, and "
- "three checks rule out a mis-assignment of colours, an axis-calibration mistake and a "
- "partially occluded curve. The most likely explanation is that the committed figure "
- "was produced in an earlier run and not overwritten by the run whose metrics are "
- "recorded, which is a provenance problem rather than a modelling problem. The "
- "consequence for this paper is that Fig. 2 is documented as a regenerated rendering "
- "of a committed artifact and not as an independent re-computation; before submission "
- "the evaluation script must be re-run from the current checkpoint so that {fig:roc}, "
- "{tab:T3} and {tab:T4} are provably produced by the same pass. The permanent fix is "
- "the fourth recommendation in Section VII: emit curve coordinates, not only curve "
- "images."),
+ "The two tests therefore agree with each other and disagree with one artifact. "
+ "Because a ROC curve must contain its own operating point, and because an AUC of "
+ "0.957 is incompatible with a true positive rate of 0.479 at a false positive rate "
+ "of 0.137, the archived Cardiomegaly curve cannot have been produced by the "
+ "predictions summarized in the count matrix, the metric record and the confusion "
+ "figure. Two further observations locate the fault in the figure rather than in the "
+ "metrics. First, the ROC figure stores no numeric coordinates, so it is the only "
+ "record that cannot be re-checked arithmetically and the only one that could have "
+ "survived a partial regeneration. Second, the discrepancy is confined to a single "
+ "finding, which is the signature of a stale panel inside a partially rewritten "
+ "image rather than of a corrupted evaluation."),
 ("p",
- "{fig:loss} and {fig:gradcam} inherit the same constraint in a stronger form. The training-loss "
- "series is not persisted by the training loop, and the release contains neither the "
- "image corpus nor the trained weights, so neither a genuine training curve nor a "
- "genuine Grad-CAM overlay can be produced from what was provided. Both panels are "
- "therefore rendered as explicitly labelled placeholders. They are included so that "
- "the manuscript is complete in structure and so that the gap is visible to a reader, "
- "not so that the paper appears finished; a submission that retains them without "
- "replacement would be misrepresenting illustrative material as experimental output."),
-
+ "Two consequences follow for this version of the paper. The reported value for "
+ "Cardiomegaly remains 0.805, the value in the internally closed record, and the "
+ "higher 0.957 is explicitly rejected on evidence rather than on preference. At the "
+ "same time, 0.805 is reported as recorded rather than as independently re-derived: "
+ "because the curve was never stored, re-establishing it requires re-running "
+ "evaluation from the saved checkpoint, which the release does not permit because "
+ "the checkpoint and the image corpus are both excluded from version control. "
+ "Appendix B therefore also serves as the specification for the re-run: it states "
+ "exactly which four quantities must agree before a curve may appear in the figure "
+ "again."),
 ("h1", "ACKNOWLEDGEMENT"),
 ("p",
  "The author thanks the maintainers of the public chest radiograph corpora used in "
@@ -179,13 +208,27 @@ TABLES2 = {
     "Verified: checkpoint stores model, optimiser, scheduler, epoch index, validation "
     "loss and history, and the loop resumes at epoch index + 1",
     "Confirmed"],
+   ["F10", "Reported per-finding AUCs are mutually consistent",
+    "Verified for Normal, Pneumonia and Pleural effusion: their operating points and "
+    "recovered curve areas agree with the count matrices to 0.004 and 0.002 "
+    "respectively",
+    "Table III retained; Fig. 2(a) retained"],
+   ["F11", "Cardiomegaly AUC of 0.805 is supported by the archived curve",
+    "Not supported: the archived curve integrates to 0.957 and stands 0.480 above the "
+    "attainable true positive rate at its own operating point",
+    "Curve withdrawn from Fig. 2; 0.805 retained from the closed record and qualified "
+    "in Sections IV-C, IV-E and Table III"],
+   ["F12", "Training and validation loss behaviour",
+    "Not recorded: no loss series is persisted and the release contains no checkpoint "
+    "history object",
+    "All loss values removed from the text; Fig. 4 is an explicit no-data panel"],
    ["F9", "Grad-CAM as an explanation of model attention",
     "Verified as implemented (gradient-weighted activation of the final feature map), "
     "but no sanity check or localisation ground truth is applied",
     "Downgraded to qualitative aid; limitation L9"],
  ],
- note="Items F1a, F2, F6 and F7 changed the content of the paper rather than its "
-      "phrasing. Items F1, F3, F3a and F4 confirm that the methodology text is now an "
+ note="Items F1a, F2, F6, F7, F11 and F12 changed the content of the paper rather "
+      "than its phrasing. Items F1, F3, F3a and F4 confirm that the methodology text is now an "
       "accurate description of the code.",
 ),
 "T7": dict(

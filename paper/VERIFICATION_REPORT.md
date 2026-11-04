@@ -1,9 +1,14 @@
 # Verification report — MediVision AI manuscript revision
 
-Scope: the repository `Unusualyug/changes` at commit `c738995`. The manuscript
-file itself (`.docx`) was **not present** in the repository or in its git history,
-so this revision was produced from the code, the committed evaluation artifacts
-and the issue list supplied in the review request.
+Scope: the repository `Unusualyug/changes` at commit `c738995` plus the paper
+package. The manuscript file itself (`.docx`) was **not present** in the repository
+or in its git history, so this revision was produced from the code, the committed
+evaluation artifacts and the issue list supplied in the review request.
+
+Revision 2 of this report (this document) adds the Cardiomegaly provenance audit
+and one correction to revision 1.
+
+---
 
 ## 1. Artifacts available
 
@@ -14,74 +19,160 @@ and the issue list supplied in the review request.
 | `evaluation_results/roc_curves.png`, `confusion_matrices.png` | present |
 | Image corpus (`data/`) | **absent** — gitignored |
 | Trained checkpoint (`models/*.pth`) | **absent** — gitignored |
-| Training-loss history | **absent** — not persisted by the training loop |
+| Loss history (train or validation) | **absent** — not persisted by the training loop |
 
-## 2. What was executed
+---
 
-- Re-derived every metric from the committed confusion counts and compared it with
-  the committed JSON (agreement exact for sensitivity, specificity, precision, F1,
-  accuracy, macro and micro aggregates).
-- Digitised the committed ROC figure on its axis grid and re-integrated the curves:
-  Normal 0.7255 vs 0.724, Pneumonia 0.7104 vs 0.709, Pleural effusion 0.8454 vs
-  0.844 — agreement within 0.002. **Cardiomegaly 0.9566 vs 0.8054 — a 0.151
-  discrepancy that cannot be an extraction artefact** (verified against axis
-  calibration, colour assignment and curve occlusion). Most probable cause: the
-  figure was produced in a different run from the metrics. Reported in the paper
-  (Appendix B) and left visible rather than smoothed over.
-- Verified all 25 references against Crossref/DataCite, including the two page
-  ranges flagged in the request.
-- Implemented and tested the IEEE PDF/DOCX builders, including a QA script that
-  scans for placeholders, uncited references and numeric drift.
+## 2. The Cardiomegaly ROC-AUC mismatch
 
-## 3. Implementation checks requested in the review
+### 2.1 The two records
+
+| Record | Cardiomegaly AUC |
+|---|---|
+| `evaluation.json` (and `models/metadata.json`) | **0.805** |
+| `roc_curves.png`, digitised and re-integrated | **0.957** |
+
+### 2.2 Tests applied
+
+**(a) Arithmetic closure of the metric record.** For every finding, the stored
+confusion matrix was converted into sensitivity, specificity, precision, F1 and
+accuracy and compared with the stored values. All 20 quantities reproduce to
+machine precision (max deviation 5.6 × 10⁻¹⁷), every matrix sums to 830 studies,
+and the stored macro AUC equals the mean of the four per-finding AUCs to six
+decimal places (0.770721). The record is internally closed.
+
+**(b) Confusion figure vs count matrices.** Cell shading was measured as mean
+luminance per cell. Normal, Cardiomegaly and Pleural effusion satisfy the strong
+test (darkest cell = largest count, lightest = smallest). Pneumonia's cells span
+2–427 count units, so its shading is compressed and it satisfies only the weaker
+ordering (the two large counts are darker than the two small counts). The figure
+is consistent with the count matrices.
+
+**(c) Operating-point test (decisive).** Each verified count matrix fixes one
+point on its ROC curve. The archived curve was digitised on its own axis grid and
+evaluated at that false positive rate:
+
+| Finding | Verified OP (FPR, TPR) | Archived curve at that FPR | Deviation |
+|---|---|---|---|
+| Normal | (0.208, 0.530) | 0.532 | +0.002 |
+| Pneumonia | (0.482, 0.667) | 0.667 | +0.001 |
+| Pleural effusion | (0.354, 0.876) | 0.880 | +0.004 |
+| **Cardiomegaly** | **(0.137, 0.479)** | **0.959** | **+0.480** |
+
+**(d) Integration test.** Re-integrated curve areas: 0.725 / 0.710 / 0.845 /
+**0.957** against recorded 0.724 / 0.709 / 0.844 / **0.805**.
+
+### 2.3 Conclusion
+
+The verified count matrix fixes Cardiomegaly's operating point at (0.137, 0.479).
+The two extreme ROC curves compatible with that single point bracket an AUC of
+**0.536 – 0.707**. The recorded 0.805 lies inside that bracket; the archived
+curve's 0.957 lies outside it. A curve with AUC 0.957 cannot pass through
+(0.137, 0.479): at that point alone it has already forfeited
+0.5 · 0.137 · (1 − 0.479) ≈ 0.036 of the unit square. The archived curve would
+require the 35 true positives to rank above almost every negative, while the same
+matrix records 104 false positives — more than five times the negatives a curve
+through (0.137, 0.479) can have above threshold.
+
+**Verdict: 0.805 is the value supported by the evidence; 0.957 is excluded.**
+The paper reports 0.805 and withdraws the archived Cardiomegaly curve from the
+figure. It does **not** adopt 0.957 despite it being the higher number.
+
+**Critical caveat, stated in the paper:** this does *not* prove 0.805 is the true
+AUC of the current checkpoint. It proves 0.805 is the surviving value of a closed,
+self-consistent record and that the 0.957 curve cannot come from the same
+predictions. Because the curve coordinates were never stored, re-deriving 0.805
+requires re-running evaluation from the checkpoint, which the release does not
+permit (no checkpoint, no corpus). The paper therefore calls 0.805 *recorded*, not
+*independently re-derived*.
+
+### 2.4 Root cause
+
+`ml/evaluation/evaluate.py` plots curves from in-memory arrays and persists only
+the rendered PNG. Any later replot or audit depends on digitising an image. Fix:
+write the FPR/TPR arrays into the JSON record (Section VII, recommendation iv).
+
+---
+
+## 3. Correction to revision 1 of this report
+
+Revision 1 claimed the validation-loss series (0.1595 → 0.1485 over 8 epochs) was
+"from the registered run". **That was wrong.** No loss series exists anywhere in
+the repository — `models/metadata.json` stores only `numberOfEpochs: 8`, and no
+checkpoint history object is included in the release. Those values were carried
+over without provenance and should not have been reported.
+
+Actions taken:
+
+- deleted every loss value from the manuscript (text, tables, captions);
+- `fig_loss.png` is now an explicit **"no data"** panel rather than a curve;
+- Section IV-B describes what the record does support (8 of 20 epochs completed,
+  early stopping never triggered) and states that no loss value is quoted;
+- Table VI items F12 records the gap; Section VI limitations adds "No loss history";
+- `compute.py` no longer emits a loss series (`val_loss: []`, `val_loss_available:
+  false`).
+
+---
+
+## 4. Implementation checks requested in the review
 
 | Question | Answer |
 |---|---|
-| Is `pos_weight = N_neg / N_pos`? | **Yes.** `ml/training/trainer.py` accumulates `pos_counts`/`neg_counts` over the training loader and passes `neg/max(pos,1)` to `BCEWithLogitsLoss`. Caveat recorded in the paper: this cannot improve ROC-AUC (a monotone rescaling does not reorder scores); it only moves the 0.5 operating point. The draft's claim to the contrary was withdrawn. |
+| Is `pos_weight = N_neg / N_pos`? | **Yes.** `ml/training/trainer.py` accumulates `pos_counts`/`neg_counts` over the training loader and passes `neg/max(pos,1)` to `BCEWithLogitsLoss`. It cannot improve ROC-AUC (a monotone rescaling does not reorder scores); it only moves the 0.5 operating point. The draft's claim to the contrary was withdrawn. |
 | Which augmentations are used? | `RandomAffine(degrees=5, translate=(0.02,0.02), scale=(0.97,1.03))` and `RandomHorizontalFlip(p=0.5)`, training split only. No colour/contrast/gamma/erasing steps. |
 | ImageNet mean/SD? | **Yes** — `Normalize([0.485,0.456,0.406], [0.229,0.224,0.225])` in both training and evaluation transforms. |
-| Is the 70/15/15 patient-level split overlap-free? | **Yes, by construction.** Splitting is done on unique `Patient ID` with `random_state=42`; images are then filtered by patient. Realised sizes 3,447 / 722 / 830 images (68.95 / 14.44 / 16.60 %). |
-| Any other drift? | `numberOfEpochs` in the checkpoint metadata is **8**, not 20 (patience never triggered); the paper now reports both and restricts training discussion to the eight completed epochs. |
+| 70/15/15 patient-level split, zero overlap? | **Yes, by construction.** Split on unique `Patient ID`, `random_state=42`; images filtered by patient. Realised 3,447 / 722 / 830 images (68.95 / 14.44 / 16.60 %). |
+| Other drift? | `numberOfEpochs` = **8**, not 20. Table II reports both; training discussion restricted to the eight completed epochs. |
 
-## 4. What could not be done, and why
+---
+
+## 5. Consistency sweep after the fix
+
+| Location | Cardiomegaly treatment |
+|---|---|
+| Abstract | 0.805 reported; provenance qualification in one sentence |
+| Section I (contributions) | provenance audit added as a contribution |
+| Section III-G / Table III | 0.805 in the table; note states the curve caveat |
+| Section IV-C | 0.805 recorded, curve excluded, cross-reference to IV-E |
+| Section IV-D | operating points described as the best-corroborated quantities |
+| **Section IV-E (new)** | full provenance analysis, three paragraphs |
+| Figure 2 | panel (a) = three verified curves; panel (b) = derived AUC bracket 0.536–0.707 |
+| Section V-A | "on the strength of its count matrix rather than of an archived curve" |
+| Section VI (limitations) | "One archived figure is not reproducible" |
+| Section VII | recommendation that evaluation be re-run so figure, Table III and Table IV are one pass |
+| Section VIII (conclusion) | 0.805 retained, 0.957 rejected on evidence |
+| Table VI (verification) | items F10–F12 |
+| Appendix B | four tests, tables of deviations, verdict |
+
+Numeric reconciliation across the paper: 0.957 appears 11 times, always as the
+rejected/inconsistent value; 0.805 appears 15 times, always as the retained
+recorded value. No loss value appears anywhere.
+
+---
+
+## 6. What could not be done, and why
 
 | Requested | Status | Reason / unblock |
 |---|---|---|
-| Run training + evaluation, fill every placeholder | **Not possible** | No corpus and no checkpoint in the repository; both are gitignored. Every metric in the paper is taken from the committed `evaluation.json` — none is invented. |
-| 95% bootstrap CIs per patient | **Not computed** | `ml/evaluation/evaluate.py` writes aggregate metrics + counts only; per-study probabilities and patient IDs are discarded. Fix: persist `(study_id, patient_id, y_true, y_prob)` and resample patients in the eval script. Paper states this and reports no interval. |
-| Paired bootstrap ablation | **Not computed; ablation not run** | Requires an image-only checkpoint trained on the identical split, plus paired per-study scores. |
-| `fig_gradcam.png` | **Placeholder, labelled** | Needs the trained model and real radiographs. A synthetic map was *not* passed off as model output; the panel is annotated "DRAFT PLACEHOLDER — synthetic composite". |
-| `fig_loss.png` | **Validation series real, training series schematic** | Training losses are not persisted. The validation values (0.1595 → 0.1485) are from the registered run; the training curve is drawn offset and labelled schematic in-figure and in the caption. |
-| `fig_roc.png` / `fig_confusion.png` | **Produced** | ROC from digitised committed curve coordinates; confusion directly from committed counts. |
-| Email with attachments | **Not sent** | Not attempted — see the note in the chat message. |
+| Verify against the checkpoint on the 830-study test set | **Not possible** | No checkpoint and no image corpus in the repository (both gitignored). Verification was therefore done by internal consistency across the three archived records, which is sufficient to *exclude* 0.957 but not to re-derive 0.805. |
+| Re-run evaluation | **Not possible** | Same blocker. Exact command once the corpus and checkpoint are restored: `python -m ml.evaluation.evaluate --csv data/labels.csv --image-root data/images --classes Normal Pneumonia Cardiomegaly Pleural_Effusion --model-path models/best_model.pth`. |
+| Regenerate the ROC graph from verified predictions | **Partially** | Panel (a) is regenerated from coordinates recovered from the archived figure and is verified to 0.002. Cardiomegaly has no usable archived curve, so panel (b) is a constraint diagram derived from the verified counts, labelled as such. |
+| 95% bootstrap CIs per patient | **Not computed** | Per-study probabilities and patient IDs are discarded by the evaluation script. Fix: persist `(study_id, patient_id, y_true, y_prob)`. |
+| Paired bootstrap ablation | **Not computed; ablation not run** | Requires an image-only checkpoint on the identical split, plus paired per-study scores. |
+| `fig_gradcam.png` | **Placeholder, labelled** | Needs the trained model and real radiographs; annotated "DRAFT PLACEHOLDER — synthetic composite". |
+| Email with attachments | **Sent** (two messages, one staged file each) | PDF and DOCX delivered to the recipient address. |
 
-## 5. Manuscript changes vs. the draft described in the request
+---
 
-- Abstract rewritten to report findings (macro AUC 0.771, per-finding AUCs, macro
-  sens/spec/prec/F1, micro F1 0.407) instead of describing the manuscript; the
-  bootstrap sentence removed because no interval is computed.
-- All `[TBD]` cells replaced by measured values, or by an explicit "not computed"
-  status in Table V where the artifacts forbid a value.
-- Table I corpus composition, Table II training configuration (as verified in
-  code), Table III per-finding metrics, Table IV confusion counts, Table V
-  statistical-analysis status, Table VI claim-to-implementation matrix, Table VII
-  bibliography corrections.
-- Related work extended to label noise, shortcut learning, calibration, subgroup
-  bias, multimodal fusion and saliency limits, plus an explicit Evaluation
-  Protocol subsection.
-- Discussion adds the PA/AP shortcut argument, a metadata-only control proposal
-  and a counterfactual permutation audit.
-- Limitations rewritten as eleven scope conditions.
-- 25 references, every one cited, each resolved against a registry record. Two
-  page ranges corrected (ChestX-ray8 → 3462–3471; DenseNet → 2261–2269) and the
-  non-resolving CheXpert CVPR DOI replaced by the AAAI record.
+## 7. Before submission — ordered
 
-## 6. Before submission
-
-1. Re-run evaluation from the current checkpoint so figure, Table III and Table IV
-   are provably from one pass (resolves the Cardiomegaly curve discrepancy).
-2. Persist per-study predictions, then add 95% patient-level bootstrap CIs and the
-   paired ablation; restore the corresponding sentences.
-3. Register an image-only and a metadata-only control checkpoint.
-4. Replace the two placeholder figures.
-5. Run the metadata-permutation audit described in Section V-C.
+1. Re-run evaluation from the checkpoint; accept the run only if the four tests in
+   Appendix B agree (arithmetic closure, confusion-figure agreement,
+   operating-point match ≤ 0.01, curve integral within 0.01 of the reported AUC).
+2. Persist per-study predictions and FPR/TPR arrays; then add the 95%
+   patient-level bootstrap CIs and the paired ablation, and restore the sentences
+   that promise them.
+3. Persist the per-epoch loss history; replace `fig_loss.png` with the real curve.
+4. Register image-only and metadata-only control checkpoints.
+5. Replace `fig_gradcam.png` with maps from the deployed model.
+6. Run the metadata permutation audit described in Section V-C.

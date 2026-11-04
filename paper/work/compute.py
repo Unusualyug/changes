@@ -4,7 +4,7 @@ from pathlib import Path
 EV = json.load(open('/home/user/changes/medivision-ai-ml/evaluation_results/evaluation.json'))
 META = json.load(open('/home/user/changes/medivision-ai-ml/models/metadata.json'))
 m = EV['metrics']; pc = m['per_class']; ov = m['overall']
-N = m['sample_count']; val_hist = [0.1595,0.1571,0.1528,0.1504,0.1486,0.1489,0.1487,0.1485]
+N = m['sample_count']; val_hist = []   # NOT persisted by the training loop; no value may be quoted
 
 res = {'n_test': N, 'threshold': m['threshold'], 'macro': ov, 'per_class': {}, 'sizes': META['datasetSizes'],
        'epochs_completed': META['numberOfEpochs'], 'training_date': META['trainingDate'],
@@ -42,8 +42,9 @@ c['micro_spec'] = c['micro_TN']/(c['micro_TN']+c['micro_FP'])
 c['micro_prec'] = c['micro_TP']/(c['micro_TP']+c['micro_FP'])
 c['micro_f1'] = 2*c['micro_prec']*c['micro_sens']/(c['micro_prec']+c['micro_sens'])
 
-# loss-curve consistency: val loss difference per epoch, and best epoch
-res['best_epoch'] = int(np.argmin(val_hist)+1)
+# loss-curve consistency: NO loss series exists in the released artifacts
+res['val_loss_available'] = False
+res['best_epoch'] = None
 
 # --- ROC digitisation cross-check ---
 roc = json.load(open('roc_extracted.json'))
@@ -76,5 +77,5 @@ for k in pc:
     print(f"{k:18s} reported={pc[k]['roc_auc']:.4f}  from_plot={roc[k]['auc_from_plot']:.4f}  |diff|={res['roc_abs_diff'][k]:.4f}")
 print("\nsplit sizes:", res['sizes'], " proportions:",
       {k: round(v/res['sizes']['total'],4) for k,v in res['sizes'].items() if k!='total'})
-print("epochs recorded in checkpoint:", res['epochs_completed'], " best val epoch:", res['best_epoch'])
-print("val loss monotonically decreasing except:", [ (i+1, val_hist[i]) for i in range(1,len(val_hist)) if val_hist[i]>val_hist[i-1]])
+print("epochs recorded in checkpoint:", res['epochs_completed'], "| val-loss series available:", res['val_loss_available'])
+

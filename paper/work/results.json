@@ -89,16 +89,7 @@
   "training_date": "2026-09-13T19:00:10.546615+00:00",
   "architecture": "DenseNet121 + metadata fusion",
   "metadata_dim": 11,
-  "val_loss": [
-    0.1595,
-    0.1571,
-    0.1528,
-    0.1504,
-    0.1486,
-    0.1489,
-    0.1487,
-    0.1485
-  ],
+  "val_loss": [],
   "input_size": 224,
   "classes": [
     "Normal",
@@ -122,7 +113,8 @@
     "micro_prec": 0.31131296449215523,
     "micro_f1": 0.4066882416396979
   },
-  "best_epoch": 8,
+  "val_loss_available": false,
+  "best_epoch": null,
   "roc_from_plot": {
     "Normal": 0.725069043478261,
     "Pneumonia": 0.710350086956522,

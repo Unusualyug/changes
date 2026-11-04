@@ -17,6 +17,12 @@ Also in the repository under paper/:
 
 Headline results (held-out test set, n = 830 studies, threshold 0.50):
   Macro ROC-AUC 0.771 | Normal 0.724 | Pneumonia 0.709 |
-  Cardiomegaly 0.805 | Pleural effusion 0.844
+  Cardiomegaly 0.805 (recorded; archived curve excluded, see below) |
+  Pleural effusion 0.844
+
+  Cardiomegaly provenance: the archived ROC curve integrates to 0.957 but the
+  verified count matrix fixes its operating point at (FPR 0.137, TPR 0.479), for
+  which the attainable AUC bracket is 0.536-0.707. 0.957 is therefore excluded and
+  the internally consistent record value 0.805 is retained. See Appendix B.
   Macro sensitivity 0.638 | specificity 0.705 | precision 0.323 |
   F1 0.349 | micro F1 0.407
