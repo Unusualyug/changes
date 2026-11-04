@@ -41,3 +41,25 @@ assigned automatically in order of first citation through the `{fig:key}` and
 To replace the two placeholder panels, produce real images at
 `figures/fig_loss.png` and `figures/fig_gradcam.png`, then re-run
 `build_pdf.py` and `build_docx.py` only.
+
+## Revision 3 additions
+
+Derived statistics are now generated, not typed:
+
+```bash
+cd paper/work
+python3 stats.py        # -> stats.json (intervals, attainable AUC ranges, macro means)
+python3 make_roc.py     # -> figures/fig_roc.png
+python3 make_conf.py    # -> figures/fig_confusion.png
+python3 build_pdf.py    # -> MediVision_AI_IEEE_Research_Final.pdf
+python3 build_docx.py   # -> MediVision_AI_IEEE_Research_Final.docx
+```
+
+`stats.py` reads `medivision-ai-ml/evaluation_results/evaluation.json` and emits
+Clopper-Pearson and Hanley-McNeil intervals, the exact attainable-AUC bracket of
+Eq. (7), and the all-finding and three-finding macro averages. `content.py` and
+`content2.py` import `stats.json`, so editing a number in the source JSON and
+re-running `stats.py` propagates to the text, tables and figures.
+
+Both placeholder figures (`fig_loss.png`, `fig_gradcam.png`) were deleted in
+revision 3; they are no longer part of the build.

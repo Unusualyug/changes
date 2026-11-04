@@ -82,12 +82,14 @@ S["tablecap"] = ParagraphStyle("tablecap", fontName="Serif", fontSize=8.2, leadi
 S["tcell"] = ParagraphStyle("tcell", fontName="Serif", fontSize=7.3, leading=9,
                             alignment=TA_LEFT)
 S["tcellc"] = ParagraphStyle("tcellc", parent=S["tcell"], alignment=TA_CENTER)
+S["theadc"] = ParagraphStyle("theadc", fontName="Serif-Bold", fontSize=7.3, leading=9,
+                             alignment=TA_CENTER, spaceBefore=0, spaceAfter=0)
 S["thead"] = ParagraphStyle("thead", fontName="Serif-Bold", fontSize=7.3, leading=9,
                             alignment=TA_CENTER)
 S["note"] = ParagraphStyle("note", fontName="Serif", fontSize=7.3, leading=8.9,
                            alignment=JUST, spaceBefore=2)
-S["ref"] = ParagraphStyle("ref", fontName="Serif", fontSize=7.7, leading=9.5,
-                          alignment=JUST, leftIndent=14, firstLineIndent=-14, spaceAfter=1.6)
+S["ref"] = ParagraphStyle("ref", fontName="Serif", fontSize=7.55, leading=9.1,
+                          alignment=JUST, leftIndent=13, firstLineIndent=-13, spaceAfter=1.1)
 S["refnote"] = ParagraphStyle("refnote", parent=S["ref"], fontName="Serif-Italic",
                               textColor=colors.HexColor("#444444"))
 
@@ -176,7 +178,9 @@ class Paper(BaseDocTemplate):
         canv.restoreState()
 
 # ------------------------------------------------------------------ builders
-WIDE = set()   # all floats are single-column inline (IEEE default)
+# Floats that need more width than a single column are set full-width at the top
+# of a page, which is standard IEEE practice for wide tables.
+WIDE = {"tab_T6"}
 
 def key_of(kind, payload):
     return ("tab_" if kind == "table" else "fig_") + payload
@@ -207,20 +211,60 @@ def table_block(key, width=FULLW):
     t = ALL_TABLES[key]
     n = TABNUM[key]
     nc = len(t["header"])
-    hdr = [Paragraph(rich(c), S["thead"]) for c in t["header"]]
+    hdr = [Paragraph(rich(c), S["theadc"]) for c in t["header"]]
     rows = [[Paragraph(rich(resolve(c)), S["tcellc"] if i else S["tcell"])
              for i, c in enumerate(r)] for r in t["rows"]]
     # proportional widths from character counts
+    # Column widths: a proportional estimate, then a water-filling pass that
+    # guarantees each column can hold its longest unbreakable token.
     lengths = []
     for j in range(nc):
         m = max(len(BC.plain(t["header"][j])), 3)
         for r in t["rows"]:
             m = max(m, min(46, len(BC.plain(r[j]))))
         lengths.append(m)
-    tot = sum(lengths)
-    cw = [max(0.62 * inch, width * l / tot) for l in lengths]
-    scale = width / sum(cw)
-    cw = [c * scale for c in cw]
+    tot = float(sum(lengths))
+    cw = [width * l / tot for l in lengths]
+    # Exact needs: the widest unbreakable word in each column, measured with the
+    # same font metrics ReportLab will use, plus the cell padding.
+    PADX = 6.0
+    need = []
+    for j in range(nc):
+        wmax = 0.0
+        for cell, fnt in [(t["header"][j], "Serif-Bold")] + \
+                         [(r[j], "Serif") for r in t["rows"]]:
+            for tok in BC.plain(cell).split("/"):
+                wmax = max(wmax, pdfmetrics.stringWidth(tok, fnt, 7.3) + PADX + 0.6)
+        need.append(wmax)
+    # The label column may wrap on spaces (a two-line finding name is normal in
+    # IEEE tables); every other column must hold its widest cell intact.
+    need[0] = min(need[0], 0.86 * inch)
+    for j in range(1, nc):
+        need[j] += 1.0
+    # never let the requirements exceed the frame: cap wide columns first
+    excess = sum(need) - width
+    if excess > 0:
+        wide = [j for j in range(nc) if need[j] > width / nc]
+        for j in sorted(wide, key=lambda k: -need[k]):
+            if excess <= 0:
+                break
+            take = min(excess, need[j] - width / nc)
+            need[j] -= take
+            excess -= take
+        if excess > 0:
+            for j in range(nc):
+                need[j] = max(need[j] - excess / nc, 0.30 * inch)
+    total_need = sum(need)
+    if total_need < width:
+        # distribute the slack in proportion to each column's requirement
+        cw = [n * width / total_need for n in need]
+    else:
+        cw = list(need)
+        scale = width / total_need
+        cw = [c * scale for c in cw]
+    if t.get("widths"):
+        wts = [float(x) for x in t["widths"]]
+        cw = [width * w / sum(wts) for w in wts]
     data = [hdr] + rows
     tbl = Table(data, colWidths=cw, repeatRows=1, hAlign="CENTER")
     style = [

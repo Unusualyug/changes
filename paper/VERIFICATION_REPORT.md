@@ -1,178 +1,196 @@
-# Verification report — MediVision AI manuscript revision
+# Verification Report — MediVision AI manuscript
 
-Scope: the repository `Unusualyug/changes` at commit `c738995` plus the paper
-package. The manuscript file itself (`.docx`) was **not present** in the repository
-or in its git history, so this revision was produced from the code, the committed
-evaluation artifacts and the issue list supplied in the review request.
+**Revision 3.** Supersedes revision 2. Documents what was verified, what was
+changed in response to external review, what is still not verifiable, and why.
 
-Revision 2 of this report (this document) adds the Cardiomegaly provenance audit
-and one correction to revision 1.
+Artifacts: `MediVision_AI_IEEE_Research_Final.pdf` (14 pp.), `.docx`,
+`figures/` (3 figures at 600 dpi), `work/stats.json` (every derived number).
 
 ---
 
-## 1. Artifacts available
+## 1. What changed in revision 3, and why
 
-| Input | Status |
+### 1.1 The AUC bracket in Fig. 2(b) was wrong — corrected
+
+Revision 2 claimed that "the trapezoidal brackets implied by the operating
+point are 0.536 and 0.707, which enclose 0.805 but exclude 0.957." **That
+sentence contradicted itself**: 0.805 > 0.707. The numbers came from an invalid
+construction (half the unit square instead of a bound on the area), not from a
+theorem.
+
+The correct statement is a closed-form bound. A ROC curve is non-decreasing from
+(0,0) to (1,1) and passes through the verified operating point (f, t). Its area
+is therefore at least the area under the piecewise-linear path through that
+point, and at most the area of the path that rises to TPR = 1 before the point
+and stays there:
+
+    A_min = ½·f·t + (1−f)·t        A_max = f·t + (1−f)
+
+Both bounds are attainable, so the interval is exact for a single operating
+point. For Cardiomegaly, f = 104/757 = 0.1374 and t = 35/73 = 0.4795:
+
+    A_min = 0.4465        A_max = 0.9285
+
+The recorded AUC of 0.805 lies inside; a value of 0.957 lies outside. The
+review's independent estimate of "about 0.41 to 0.93" is the same bound; the
+small difference is the rounding of f and t before substitution. Implemented in
+`work/stats.py::auc_bracket`, exercised on all four findings, and reproduced in
+the PDF to three decimals.
+
+**The sentence and the numbers now agree**: "A monotone ROC curve through
+(0.137, 0.479) has an area between 0.447 and 0.928."
+
+### 1.2 The weighting explanation contradicted the prevalences — removed
+
+Revision 2 said effusion "has the largest positive weight in the training
+partition and Cardiomegaly among the smallest." This is incoherent: with
+w = N_neg/N_pos, the *rarer* finding gets the *larger* weight, and Cardiomegaly
+(8.8%) is rarer than effusion (13.6%). Since training-partition prevalences are
+not in the release, the claim was unverifiable as well as wrong.
+
+It is deleted. What remains is the analytically correct statement: the weight is
+largest where a finding is rarest, so the fixed 0.50 threshold lands at very
+different positions across findings, and the individual weights cannot be quoted
+because the training positive counts are not retained.
+
+### 1.3 Title and abstract
+
+Title: "A **Reproducible** Multimodal DenseNet121 Framework …" → "A Multimodal
+DenseNet121 **Baseline** … with an Audit of What Its Evaluation Record Can and
+Cannot Support". "Reproducible" is dropped because the evaluation cannot be
+re-executed from the release (no checkpoint, no corpus). Abstract is cut from
+~460 words to 233 and no longer claims a fusion benefit.
+
+### 1.4 Placeholder and no-data figures — deleted
+
+| Revision 2 | Revision 3 |
 |---|---|
-| `medivision-ai-ml/evaluation_results/evaluation.json` | present — per-finding AUC, precision, recall, F1, sensitivity, specificity, support, confusion matrix; `sample_count` = 830 |
-| `medivision-ai-ml/models/metadata.json` | present — architecture, 8 completed epochs, split sizes, metadata spec |
-| `evaluation_results/roc_curves.png`, `confusion_matrices.png` | present |
-| Image corpus (`data/`) | **absent** — gitignored |
-| Trained checkpoint (`models/*.pth`) | **absent** — gitignored |
-| Loss history (train or validation) | **absent** — not persisted by the training loop |
+| `fig_gradcam.png`, captioned "synthetic layout placeholder" | **deleted**; §V-F states no saliency map is shown and why |
+| `fig_loss.png`, an empty "no data" panel | **deleted**; §IV-B states in one sentence that no loss series survives |
+| `fig_roc.png` (a) curves digitised from the archived PNG | **redrawn** as verified operating points only — no curve is drawn, because aggregate counts do not determine the interior of a ROC curve |
+| `fig_roc.png` (b) "constraint diagram" | **redrawn** as recorded AUC with 95% Hanley–McNeil intervals and attainable ranges |
 
----
+No figure in the paper is now synthetic, illustrative, or a placeholder.
 
-## 2. The Cardiomegaly ROC-AUC mismatch
+### 1.5 Intervals are now reported (they were wrongly declared impossible)
 
-### 2.1 The two records
+Revision 2's Table V said "no confidence interval for sensitivity or
+specificity can be computed." That was false: Clopper–Pearson intervals follow
+directly from TP/FN/TN/FP. Revision 3 adds two constructions that need only
+counts (`work/stats.py`):
 
-| Record | Cardiomegaly AUC |
+* exact binomial (Clopper–Pearson) intervals for every sensitivity and
+  specificity, cross-checked against Wilson;
+* Hanley–McNeil normal-approximation intervals for every AUC (Eq. 6).
+
+The Pneumonia row now shows the point vividly: sensitivity 0.667 with a 95%
+interval of **0.22–0.96** on six positives.
+
+Still unavailable, and still stated as such: anything requiring pairing or
+resampling — intervals on macro averages, subgroup strata, calibration, and any
+model-to-model comparison.
+
+### 1.6 Macro averages restated
+
+The all-finding macro AUC (0.771) gives a sixth of its weight to a six-event
+finding, and the paper now says so. A second macro average over the three
+findings with ≥30 positives (Normal, Cardiomegaly, Pleural effusion) is reported
+alongside: **AUC 0.791, sensitivity 0.628, specificity 0.767**. The
+three-finding average is designated the interpretable summary.
+
+### 1.7 Structure and writing
+
+* The paper no longer reads as a revision log: "the earlier draft credited …",
+  "must not claim …", "the original review request", "the manuscript and code had
+  drifted apart" are all gone. The claim-to-implementation table now states
+  results, not corrections.
+* The Cardiomegaly discrepancy is argued **once**, in §IV-G (three paragraphs).
+  It previously appeared in ten places.
+* §II-H (evaluation protocol) moved into Methods (§III-G, *Evaluation Metrics and
+  Intervals*). Related Work is now only related work.
+* The verification section is no longer numbered after the Conclusion; it is an
+  Appendix.
+* Ethics and data/code availability statements added (Declarations).
+* Fixed: "Fig. Fig.", "Table I" announced before it appeared, F-item ordering,
+  the conclusion's "three findings" that listed four with two "Second"s, and the
+  conclusion mis-attributing F4 instead of F6.
+* Every table and figure reference is now an auto-resolved cross-reference, and
+  a checker confirms no float is cited before it appears and no number is skipped.
+
+### 1.8 Claims removed
+
+| Claim | Status |
 |---|---|
-| `evaluation.json` (and `models/metadata.json`) | **0.805** |
-| `roc_curves.png`, digitised and re-integrated | **0.957** |
-
-### 2.2 Tests applied
-
-**(a) Arithmetic closure of the metric record.** For every finding, the stored
-confusion matrix was converted into sensitivity, specificity, precision, F1 and
-accuracy and compared with the stored values. All 20 quantities reproduce to
-machine precision (max deviation 5.6 × 10⁻¹⁷), every matrix sums to 830 studies,
-and the stored macro AUC equals the mean of the four per-finding AUCs to six
-decimal places (0.770721). The record is internally closed.
-
-**(b) Confusion figure vs count matrices.** Cell shading was measured as mean
-luminance per cell. Normal, Cardiomegaly and Pleural effusion satisfy the strong
-test (darkest cell = largest count, lightest = smallest). Pneumonia's cells span
-2–427 count units, so its shading is compressed and it satisfies only the weaker
-ordering (the two large counts are darker than the two small counts). The figure
-is consistent with the count matrices.
-
-**(c) Operating-point test (decisive).** Each verified count matrix fixes one
-point on its ROC curve. The archived curve was digitised on its own axis grid and
-evaluated at that false positive rate:
-
-| Finding | Verified OP (FPR, TPR) | Archived curve at that FPR | Deviation |
-|---|---|---|---|
-| Normal | (0.208, 0.530) | 0.532 | +0.002 |
-| Pneumonia | (0.482, 0.667) | 0.667 | +0.001 |
-| Pleural effusion | (0.354, 0.876) | 0.880 | +0.004 |
-| **Cardiomegaly** | **(0.137, 0.479)** | **0.959** | **+0.480** |
-
-**(d) Integration test.** Re-integrated curve areas: 0.725 / 0.710 / 0.845 /
-**0.957** against recorded 0.724 / 0.709 / 0.844 / **0.805**.
-
-### 2.3 Conclusion
-
-The verified count matrix fixes Cardiomegaly's operating point at (0.137, 0.479).
-The two extreme ROC curves compatible with that single point bracket an AUC of
-**0.536 – 0.707**. The recorded 0.805 lies inside that bracket; the archived
-curve's 0.957 lies outside it. A curve with AUC 0.957 cannot pass through
-(0.137, 0.479): at that point alone it has already forfeited
-0.5 · 0.137 · (1 − 0.479) ≈ 0.036 of the unit square. The archived curve would
-require the 35 true positives to rank above almost every negative, while the same
-matrix records 104 false positives — more than five times the negatives a curve
-through (0.137, 0.479) can have above threshold.
-
-**Verdict: 0.805 is the value supported by the evidence; 0.957 is excluded.**
-The paper reports 0.805 and withdraws the archived Cardiomegaly curve from the
-figure. It does **not** adopt 0.957 despite it being the higher number.
-
-**Critical caveat, stated in the paper:** this does *not* prove 0.805 is the true
-AUC of the current checkpoint. It proves 0.805 is the surviving value of a closed,
-self-consistent record and that the 0.957 curve cannot come from the same
-predictions. Because the curve coordinates were never stored, re-deriving 0.805
-requires re-running evaluation from the checkpoint, which the release does not
-permit (no checkpoint, no corpus). The paper therefore calls 0.805 *recorded*, not
-*independently re-derived*.
-
-### 2.4 Root cause
-
-`ml/evaluation/evaluate.py` plots curves from in-memory arrays and persists only
-the rendered PNG. Any later replot or audit depends on digitising an image. Fix:
-write the FPR/TPR arrays into the JSON record (Section VII, recommendation iv).
+| "evaluation retains enough for bootstrap CIs and an ablation" | contradicted by the record; removed |
+| "metadata fusion contributes" | unevidenced (no control model); removed |
+| "reproducible" | not satisfied by the release; removed from title and abstract |
+| "best validation loss occurred at the final epoch" | not recorded anywhere; removed |
+| validation-loss figures 0.1595 → 0.1485 | removed in revision 2, remains removed |
 
 ---
 
-## 3. Correction to revision 1 of this report
+## 2. What is verified, and how
 
-Revision 1 claimed the validation-loss series (0.1595 → 0.1485 over 8 epochs) was
-"from the registered run". **That was wrong.** No loss series exists anywhere in
-the repository — `models/metadata.json` stores only `numberOfEpochs: 8`, and no
-checkpoint history object is included in the release. Those values were carried
-over without provenance and should not have been reported.
+`work/stats.py` reads `medivision-ai-ml/evaluation_results/evaluation.json` and
+computes every derived quantity; `work/stats.json` is its output. The manuscript
+imports those values (`content.py` reads `stats.json` at build time), so no
+number in the tables is typed by hand.
 
-Actions taken:
+Checks that pass on the built PDF and DOCX:
 
-- deleted every loss value from the manuscript (text, tables, captions);
-- `fig_loss.png` is now an explicit **"no data"** panel rather than a curve;
-- Section IV-B describes what the record does support (8 of 20 epochs completed,
-  early stopping never triggered) and states that no loss value is quoted;
-- Table VI items F12 records the gap; Section VI limitations adds "No loss history";
-- `compute.py` no longer emits a loss series (`val_loss: []`, `val_loss_available:
-  false`).
-
----
-
-## 4. Implementation checks requested in the review
-
-| Question | Answer |
-|---|---|
-| Is `pos_weight = N_neg / N_pos`? | **Yes.** `ml/training/trainer.py` accumulates `pos_counts`/`neg_counts` over the training loader and passes `neg/max(pos,1)` to `BCEWithLogitsLoss`. It cannot improve ROC-AUC (a monotone rescaling does not reorder scores); it only moves the 0.5 operating point. The draft's claim to the contrary was withdrawn. |
-| Which augmentations are used? | `RandomAffine(degrees=5, translate=(0.02,0.02), scale=(0.97,1.03))` and `RandomHorizontalFlip(p=0.5)`, training split only. No colour/contrast/gamma/erasing steps. |
-| ImageNet mean/SD? | **Yes** — `Normalize([0.485,0.456,0.406], [0.229,0.224,0.225])` in both training and evaluation transforms. |
-| 70/15/15 patient-level split, zero overlap? | **Yes, by construction.** Split on unique `Patient ID`, `random_state=42`; images filtered by patient. Realised 3,447 / 722 / 830 images (68.95 / 14.44 / 16.60 %). |
-| Other drift? | `numberOfEpochs` = **8**, not 20. Table II reports both; training discussion restricted to the eight completed epochs. |
+1. **Arithmetic closure.** All twenty stored metrics reproduce from the stored
+   count matrices to ≤ 6 × 10⁻¹⁷; every matrix sums to 830; the stored macro AUC
+   equals the mean of the four per-finding AUCs.
+2. **Figure/record agreement.** The confusion figure's cell shading ranks agree
+   with the count matrices for all four findings.
+3. **Operating-point test.** Each finding's count matrix fixes one (FPR, TPR).
+   Three archived curves pass through their own operating point to ≤ 0.004; the
+   Cardiomegaly curve misses by 0.480 and is therefore withdrawn from the paper.
+4. **Attainable-range test.** Every recorded AUC lies inside the exact range
+   implied by its own operating point (Eq. 7). A recorded 0.957 for Cardiomegaly
+   would not.
+5. **Text/record agreement.** Every interval printed in the PDF appears verbatim
+   in `stats.json` (checked programmatically, 0 mismatches).
+6. **Reference integrity.** All 25 entries cited at least once, all present in
+   the bibliography, all resolved against Crossref/DataCite.
+7. **No placeholders.** No `[TBD]`, markup residue, highlight, TODO or
+   placeholder caption in either output.
 
 ---
 
-## 5. Consistency sweep after the fix
+## 3. What could not be done, and the one thing that blocks closure
 
-| Location | Cardiomegaly treatment |
-|---|---|
-| Abstract | 0.805 reported; provenance qualification in one sentence |
-| Section I (contributions) | provenance audit added as a contribution |
-| Section III-G / Table III | 0.805 in the table; note states the curve caveat |
-| Section IV-C | 0.805 recorded, curve excluded, cross-reference to IV-E |
-| Section IV-D | operating points described as the best-corroborated quantities |
-| **Section IV-E (new)** | full provenance analysis, three paragraphs |
-| Figure 2 | panel (a) = three verified curves; panel (b) = derived AUC bracket 0.536–0.707 |
-| Section V-A | "on the strength of its count matrix rather than of an archived curve" |
-| Section VI (limitations) | "One archived figure is not reproducible" |
-| Section VII | recommendation that evaluation be re-run so figure, Table III and Table IV are one pass |
-| Section VIII (conclusion) | 0.805 retained, 0.957 rejected on evidence |
-| Table VI (verification) | items F10–F12 |
-| Appendix B | four tests, tables of deviations, verdict |
+The review's first and most important point stands, and this report should not
+soften it: **the results have not been re-derived by re-running the model.**
 
-Numeric reconciliation across the paper: 0.957 appears 11 times, always as the
-rejected/inconsistent value; 0.805 appears 15 times, always as the retained
-recorded value. No loss value appears anywhere.
-
----
-
-## 6. What could not be done, and why
-
-| Requested | Status | Reason / unblock |
+| Blocked action | Reason | Consequence |
 |---|---|---|
-| Verify against the checkpoint on the 830-study test set | **Not possible** | No checkpoint and no image corpus in the repository (both gitignored). Verification was therefore done by internal consistency across the three archived records, which is sufficient to *exclude* 0.957 but not to re-derive 0.805. |
-| Re-run evaluation | **Not possible** | Same blocker. Exact command once the corpus and checkpoint are restored: `python -m ml.evaluation.evaluate --csv data/labels.csv --image-root data/images --classes Normal Pneumonia Cardiomegaly Pleural_Effusion --model-path models/best_model.pth`. |
-| Regenerate the ROC graph from verified predictions | **Partially** | Panel (a) is regenerated from coordinates recovered from the archived figure and is verified to 0.002. Cardiomegaly has no usable archived curve, so panel (b) is a constraint diagram derived from the verified counts, labelled as such. |
-| 95% bootstrap CIs per patient | **Not computed** | Per-study probabilities and patient IDs are discarded by the evaluation script. Fix: persist `(study_id, patient_id, y_true, y_prob)`. |
-| Paired bootstrap ablation | **Not computed; ablation not run** | Requires an image-only checkpoint on the identical split, plus paired per-study scores. |
-| `fig_gradcam.png` | **Placeholder, labelled** | Needs the trained model and real radiographs; annotated "DRAFT PLACEHOLDER — synthetic composite". |
-| Email with attachments | **Sent** (two messages, one staged file each) | PDF and DOCX delivered to the recipient address. |
+| Re-run evaluation on the 830-study partition | `models/best_model.pth` and `data/` are excluded from version control and absent from the repository | 0.805 remains the *recorded* value; the ROC panel cannot be regenerated |
+| Persist per-study predictions | Requires the re-run above | no bootstrap intervals, no subgroup table, no calibration |
+| Image-only / metadata-only ablation | Requires retraining from the corpus | no fusion claim is made anywhere in the paper |
+| Metadata permutation audit | Requires the checkpoint and test images | recorded as specified-but-not-run (§IV-F) |
+| Real Grad-CAM maps | Requires the checkpoint and radiographs | figure deleted rather than approximated |
+
+The code already emits everything needed except the predictions; the change is
+one block in `ml/evaluation/evaluate.py` (write `y_true`, `probs`,
+`patient_ids`, and the FPR/TPR arrays into the JSON record). With the corpus and
+checkpoint restored, the closure procedure is:
+
+1. run `python -m ml.evaluation.evaluate …`;
+2. accept the run only if all four tests in §2 pass (closure, figure agreement,
+   operating point ≤ 0.01, curve integral within 0.01 of the reported AUC);
+3. rebuild tables and figures from the new record — no manual editing;
+4. then, and only then, add bootstrap intervals and the ablation.
 
 ---
 
-## 7. Before submission — ordered
+## 4. Honest statement of the paper's standing
 
-1. Re-run evaluation from the checkpoint; accept the run only if the four tests in
-   Appendix B agree (arithmetic closure, confusion-figure agreement,
-   operating-point match ≤ 0.01, curve integral within 0.01 of the reported AUC).
-2. Persist per-study predictions and FPR/TPR arrays; then add the 95%
-   patient-level bootstrap CIs and the paired ablation, and restore the sentences
-   that promise them.
-3. Persist the per-epoch loss history; replace `fig_loss.png` with the real curve.
-4. Register image-only and metadata-only control checkpoints.
-5. Replace `fig_gradcam.png` with maps from the deployed model.
-6. Run the metadata permutation audit described in Section V-C.
+With the corrections in this revision the manuscript is internally consistent,
+every reported number is reproducible from the released metric record, and no
+figure is synthetic. It is **not** a strong empirical result: the cohort is
+4,999 images, four of fourteen findings are modelled, one seed was run, training
+stopped at 8 of 20 epochs, one finding has six positives, and there is no
+baseline model of any kind. The paper now says all of this in its own voice,
+in the abstract as well as the limitations section, and claims no fusion benefit
+and no clinical utility.
