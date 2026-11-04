@@ -1,3 +1,6 @@
 medivision-ai-platform/.venv/
 __pycache__/
 *.pyc
+
+# paper build environment (generated, not source)
+paper/work/node_modules/

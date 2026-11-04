@@ -1,0 +1,147 @@
+{
+  "n_test": 830,
+  "threshold": 0.5,
+  "macro": {
+    "roc_auc": 0.7707211218928776,
+    "precision": 0.32344980208240304,
+    "recall": 0.6380395993261114,
+    "f1": 0.3490809696766866,
+    "sensitivity": 0.6380395993261114,
+    "specificity": 0.704530591037179
+  },
+  "per_class": {
+    "Normal": {
+      "tn": 300,
+      "fp": 79,
+      "fn": 212,
+      "tp": 239,
+      "support_pos": 451,
+      "support_neg": 379,
+      "prevalence": 0.5433734939759036,
+      "sens": 0.5299334811529933,
+      "spec": 0.7915567282321899,
+      "prec": 0.7515723270440252,
+      "npv": 0.5859375,
+      "acc": 0.6493975903614457,
+      "reported_auc": 0.7238619543787187,
+      "reported_f1": 0.6215864759427828,
+      "reported_prec": 0.7515723270440252
+    },
+    "Pneumonia": {
+      "tn": 427,
+      "fp": 397,
+      "fn": 2,
+      "tp": 4,
+      "support_pos": 6,
+      "support_neg": 824,
+      "prevalence": 0.007228915662650603,
+      "sens": 0.6666666666666666,
+      "spec": 0.5182038834951457,
+      "prec": 0.00997506234413965,
+      "npv": 0.9953379953379954,
+      "acc": 0.519277108433735,
+      "reported_auc": 0.7091423948220065,
+      "reported_f1": 0.019656019656019656,
+      "reported_prec": 0.00997506234413965
+    },
+    "Cardiomegaly": {
+      "tn": 653,
+      "fp": 104,
+      "fn": 38,
+      "tp": 35,
+      "support_pos": 73,
+      "support_neg": 757,
+      "prevalence": 0.08795180722891566,
+      "sens": 0.4794520547945205,
+      "spec": 0.8626155878467635,
+      "prec": 0.2517985611510791,
+      "npv": 0.9450072358900145,
+      "acc": 0.8289156626506025,
+      "reported_auc": 0.8054324025985777,
+      "reported_f1": 0.330188679245283,
+      "reported_prec": 0.2517985611510791
+    },
+    "Pleural_Effusion": {
+      "tn": 463,
+      "fp": 254,
+      "fn": 14,
+      "tp": 99,
+      "support_pos": 113,
+      "support_neg": 717,
+      "prevalence": 0.13614457831325302,
+      "sens": 0.8761061946902655,
+      "spec": 0.6457461645746164,
+      "prec": 0.2804532577903683,
+      "npv": 0.9706498951781971,
+      "acc": 0.6771084337349398,
+      "reported_auc": 0.8444477357722072,
+      "reported_f1": 0.4248927038626609,
+      "reported_prec": 0.2804532577903683
+    }
+  },
+  "sizes": {
+    "total": 4999,
+    "train": 3447,
+    "validation": 722,
+    "test": 830
+  },
+  "epochs_completed": 8,
+  "training_date": "2026-09-13T19:00:10.546615+00:00",
+  "architecture": "DenseNet121 + metadata fusion",
+  "metadata_dim": 11,
+  "val_loss": [
+    0.1595,
+    0.1571,
+    0.1528,
+    0.1504,
+    0.1486,
+    0.1489,
+    0.1487,
+    0.1485
+  ],
+  "input_size": 224,
+  "classes": [
+    "Normal",
+    "Pneumonia",
+    "Cardiomegaly",
+    "Pleural_Effusion"
+  ],
+  "computed": {
+    "macro_auc_from_per_class": 0.7707211218928776,
+    "macro_sens": 0.6380395993261114,
+    "macro_spec": 0.704530591037179,
+    "macro_prec": 0.32344980208240304,
+    "macro_acc": 0.6686746987951807,
+    "micro_positives": 643,
+    "micro_TN": 1843,
+    "micro_FP": 834,
+    "micro_FN": 266,
+    "micro_TP": 377,
+    "micro_sens": 0.5863141524105754,
+    "micro_spec": 0.6884572282405678,
+    "micro_prec": 0.31131296449215523,
+    "micro_f1": 0.4066882416396979
+  },
+  "best_epoch": 8,
+  "roc_from_plot": {
+    "Normal": 0.725069043478261,
+    "Pneumonia": 0.710350086956522,
+    "Cardiomegaly": 0.9565693623188406,
+    "Pleural_Effusion": 0.8454226086956523
+  },
+  "roc_reported": {
+    "Normal": 0.7238619543787187,
+    "Pneumonia": 0.7091423948220065,
+    "Cardiomegaly": 0.8054324025985777,
+    "Pleural_Effusion": 0.8444477357722072
+  },
+  "roc_abs_diff": {
+    "Normal": 0.0012070890995422578,
+    "Pneumonia": 0.0012076921345155478,
+    "Cardiomegaly": 0.15113695972026286,
+    "Pleural_Effusion": 0.0009748729234451137
+  },
+  "weighting_check": {
+    "note": "pos_weight=1 for every class would drop the rescaling factor in the derived validation loss; we therefore report validation loss qualitatively (decreasing) and do not rescale it."
+  }
+}
